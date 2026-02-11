@@ -12,12 +12,14 @@ from xiaozhi.services.speaker import SpeakerManager
 from xiaozhi.utils.base import json_decode
 
 ASCII_BANNER = """
-▄▖      ▖▖▘    ▄▖▄▖
-▌▌▛▌█▌▛▌▚▘▌▀▌▛▌▌▌▐ 
-▙▌▙▌▙▖▌▌▌▌▌█▌▙▌▛▌▟▖
-  ▌                
+ __  __  ___  _____ _    
+|  \/  |/ _ \|  ___/ \   
+| |\/| | | | | |_ / _ \  
+| |  | | |_| |  _/ ___ \ 
+|_|  |_|\___/|_|/_/   \_\
+      server MAC mini
+v1.0.0 
                                                                                                                 
-v1.0.0  by: https://del.wang
 """
 
 
@@ -27,6 +29,7 @@ class XiaoAI:
     async_loop: asyncio.AbstractEventLoop = None
     emotion_buffer = bytearray()
     last_emotion_ts = 0.0
+    last_emotion = ""
 
     @classmethod
     def setup_mode(cls):
@@ -63,6 +66,17 @@ class XiaoAI:
             now = time.time()
             if len(cls.emotion_buffer) >= window_bytes and (now - cls.last_emotion_ts) >= throttle:
                 window = np.frombuffer(cls.emotion_buffer[-window_bytes:], dtype=np.int16).astype(np.float32) / 32768.0
+                # 检查音量，静音时跳过情绪分析
+                boost = float(APP_CONFIG.get("vad", {}).get("boost", 1))
+                rms = float(np.sqrt(np.mean((window * boost)**2)))
+   
+                #rms = float(np.sqrt(np.mean(window**2)))
+                if rms < 0.01:
+                    cls.last_emotion_ts = now
+                    keep_bytes = int(sr * 2 * 0.5)
+                    if len(cls.emotion_buffer) > keep_bytes:
+                        cls.emotion_buffer = cls.emotion_buffer[-keep_bytes:]
+                    return
                 # 先尝试 SER 模型
                 emotion = SER.instance().predict(window)
                 if emotion is None:
@@ -82,7 +96,7 @@ class XiaoAI:
                         emotion = "sad"
                     else:
                         emotion = "neutral"
-                if emotion:
+                if emotion and emotion != cls.last_emotion:
                     print(f"🎭 情绪识别：{emotion}")
                 zx = get_xiaozhi()
                 if zx and emotion:
