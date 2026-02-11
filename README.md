@@ -56,6 +56,18 @@
 
 以上皆为抛砖引玉，你也可以亲手编写自己想要的功能，一切由你定义！
 
+## 模型文件说明
+
+不同的演示程序对模型文件的需求不同：
+
+| 演示程序 | 是否需要模型 | 说明 |
+| --- | --- | --- |
+| [小智 AI](examples/xiaozhi/README.md) | ✅ 需要 | 需下载 [VAD + KWS 模型](https://github.com/idootop/open-xiaoai/releases/tag/vad-kws-models)，解压到 `xiaozhi/models` 目录；SER 模型为可选 |
+| [自定义唤醒词](examples/kws/README.md) | ❌ 不需要 | 启动脚本会自动下载所需文件到小爱音箱 |
+| [MiGPT](examples/migpt/README.md) | ❌ 不需要 | 无需模型文件 |
+| [Gemini](examples/gemini/README.md) | ❌ 不需要 | 无需模型文件，需配置 Gemini API 密钥 |
+| [立体声](examples/stereo/README.md) | ❌ 不需要 | 纯 Rust 编译的独立程序，启动脚本会自动下载可执行文件 |
+
 ## 相关项目
 
 > [!TIP]

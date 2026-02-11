@@ -27,6 +27,7 @@ class XiaoAI:
     async_loop: asyncio.AbstractEventLoop = None
     emotion_buffer = bytearray()
     last_emotion_ts = 0.0
+    last_emotion = ""
 
     @classmethod
     def setup_mode(cls):
@@ -63,11 +64,19 @@ class XiaoAI:
             now = time.time()
             if len(cls.emotion_buffer) >= window_bytes and (now - cls.last_emotion_ts) >= throttle:
                 window = np.frombuffer(cls.emotion_buffer[-window_bytes:], dtype=np.int16).astype(np.float32) / 32768.0
+                # 应用与 VAD 相同的增益，检查音量，静音时跳过情绪分析
+                boost = float(APP_CONFIG.get("vad", {}).get("boost", 1))
+                rms = float(np.sqrt(np.mean((window * boost)**2)))
+                if rms < 0.01:
+                    cls.last_emotion_ts = now
+                    keep_bytes = int(sr * 2 * 0.5)
+                    if len(cls.emotion_buffer) > keep_bytes:
+                        cls.emotion_buffer = cls.emotion_buffer[-keep_bytes:]
+                    return
                 # 先尝试 SER 模型
                 emotion = SER.instance().predict(window)
                 if emotion is None:
                     # 回退到启发式
-                    rms = float(np.sqrt(np.mean(window**2)))
                     zero_cross = float(np.sum(window[:-1] * window[1:] < 0)) / len(window)
                     corr = np.correlate(window, window, mode="full")[len(window)-1:]
                     min_lag = int(sr / 300)
@@ -82,9 +91,12 @@ class XiaoAI:
                         emotion = "sad"
                     else:
                         emotion = "neutral"
+                if emotion and emotion != cls.last_emotion:
+                    print(f"🎭 情绪识别：{emotion}")
+                    cls.last_emotion = emotion
                 zx = get_xiaozhi()
                 if zx and emotion:
-                    zx.schedule(lambda: zx.set_emotion(emotion))
+                    zx.schedule(lambda e=emotion: zx.set_emotion(e))
                 cls.last_emotion_ts = now
                 # 保留最近0.5秒，限制缓冲区
                 keep_bytes = int(sr * 2 * 0.5)
