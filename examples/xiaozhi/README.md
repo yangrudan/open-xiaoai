@@ -191,7 +191,7 @@ SER 功能为可选功能，默认关闭。如果你想要启用语音情绪识�
    uv run scripts/export_ser_onnx.py --model_id /path/to/local/model --output xiaozhi/models/ser.onnx
    ```
 
-2. 在 `config.py` 中配置 SER 模型路径和标签（标签顺序需要与模型输出一致）：
+2. 在 `config.py` 中配置 SER 模型路径和标签。标签顺序需要与导出脚本打印的 `Labels` 输出一致，例如使用 `ehcalabres/wav2vec2-lg-xlsr-en-speech-emotion-recognition` 模型时：
 
 ```py
 APP_CONFIG = {
@@ -199,7 +199,7 @@ APP_CONFIG = {
         "MODEL_PATH": "xiaozhi/models/ser.onnx",  # ONNX 模型文件路径
         "INPUT_NAME": "input",
         "OUTPUT_NAME": "logits",
-        "LABELS": ["neutral", "happy", "angry", "sad"],  # 根据模型的标签顺序调整
+        "LABELS": ["angry", "calm", "disgust", "fearful", "happy", "neutral", "sad", "surprised"],  # 根据导出脚本输出的 Labels 调整
         "SAMPLE_RATE": 16000,
         "WINDOW_SECONDS": 1.0,
     },

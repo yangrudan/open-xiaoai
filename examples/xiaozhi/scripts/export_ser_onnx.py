@@ -51,6 +51,7 @@ def main():
             return out.logits
 
     wrapper = Wrapper(model)
+    wrapper.eval()
 
     T = int(args.sample_rate * args.window_seconds)
     dummy = torch.randn(1, T, dtype=torch.float32)
@@ -62,7 +63,7 @@ def main():
         args.output,
         input_names=["input"],
         output_names=["logits"],
-        opset_version=13,
+        opset_version=18,
         do_constant_folding=True,
         dynamic_axes={"input": {1: "time"}, "logits": {1: "classes"}},
     )
