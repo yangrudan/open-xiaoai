@@ -309,7 +309,7 @@ class XiaoZhi:
     def _audio_input_event_trigger(self):
         """音频输入事件触发器"""
         while self.running:
-            if self.audio_codec.input_stream.is_active():
+            if self.audio_codec and self.audio_codec.input_stream and self.audio_codec.input_stream.is_active():
                 self.events[EventType.AUDIO_INPUT_READY_EVENT].set()
             time.sleep(0.01)
 
