@@ -64,8 +64,9 @@ class XiaoAI:
             now = time.time()
             if len(cls.emotion_buffer) >= window_bytes and (now - cls.last_emotion_ts) >= throttle:
                 window = np.frombuffer(cls.emotion_buffer[-window_bytes:], dtype=np.int16).astype(np.float32) / 32768.0
-                # 检查音量，静音时跳过情绪分析
-                rms = float(np.sqrt(np.mean(window**2)))
+                # 应用与 VAD 相同的增益，检查音量，静音时跳过情绪分析
+                boost = float(APP_CONFIG.get("vad", {}).get("boost", 1))
+                rms = float(np.sqrt(np.mean((window * boost)**2)))
                 if rms < 0.01:
                     cls.last_emotion_ts = now
                     keep_bytes = int(sr * 2 * 0.5)
