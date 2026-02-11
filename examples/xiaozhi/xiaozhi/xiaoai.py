@@ -82,9 +82,12 @@ class XiaoAI:
                         emotion = "sad"
                     else:
                         emotion = "neutral"
+                if emotion:
+                    print(f"🎭 情绪识别：{emotion}")
                 zx = get_xiaozhi()
                 if zx and emotion:
-                    zx.schedule(lambda: zx.set_emotion(emotion))
+                    zx.schedule(lambda e=emotion: zx.set_emotion(e))
+                    #zx.schedule(lambda: zx.set_emotion(emotion))
                 cls.last_emotion_ts = now
                 # 保留最近0.5秒，限制缓冲区
                 keep_bytes = int(sr * 2 * 0.5)

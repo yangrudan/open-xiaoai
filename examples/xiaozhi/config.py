@@ -66,15 +66,15 @@ APP_CONFIG = {
         "OTA_URL": "https://api.tenclass.net/xiaozhi/ota/",
         "WEBSOCKET_URL": "wss://api.tenclass.net/xiaozhi/v1/",
         "WEBSOCKET_ACCESS_TOKEN": "", #（可选）一般用不到这个值
-        "DEVICE_ID": "", #（可选）默认自动生成
+        "DEVICE_ID": "5f:58:bc:e6:10:b0", #（可选）默认自动生成
         "VERIFICATION_CODE": "", # 首次登陆时，验证码会在这里更新
         "LOCAL_MODE": True,  # 本地处理音频与情绪分析，不连接云端
     },
     "SER": {
-        "MODEL_PATH": "",  # 指向本地 ONNX 模型文件路径
+        "MODEL_PATH": "xiaozhi/models/ser.onnx",  # 指向本地 ONNX 模型文件路径
         "INPUT_NAME": "input",  # ONNX 模型输入名
         "OUTPUT_NAME": "logits",  # ONNX 模型输出名
-        "LABELS": ["neutral", "happy", "angry", "sad"],  # 标签顺序需与模型一致
+        "LABELS": ["angry", "calm", "disgust", "fearful", "happy", "neutral", "sad", "surprised"],  # 标签顺序需与模型一致
         "SAMPLE_RATE": 16000,
         "WINDOW_SECONDS": 1.0,
         "THROTTLE_SECONDS": 0.5,
