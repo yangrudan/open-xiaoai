@@ -53,33 +53,37 @@ class XiaoAI:
         try:
             import time
             from xiaozhi.ref import get_xiaozhi
+            from xiaozhi.services.audio.ser import SER
+            from config import APP_CONFIG
             # 追加到缓冲区
             cls.emotion_buffer.extend(audio_array.tobytes())
             sr = 16000
             window_bytes = sr * 2  # 1s of int16
+            throttle = float(APP_CONFIG.get("SER", {}).get("THROTTLE_SECONDS", 0.5))
             now = time.time()
-            if len(cls.emotion_buffer) >= window_bytes and (now - cls.last_emotion_ts) >= 0.5:
+            if len(cls.emotion_buffer) >= window_bytes and (now - cls.last_emotion_ts) >= throttle:
                 window = np.frombuffer(cls.emotion_buffer[-window_bytes:], dtype=np.int16).astype(np.float32) / 32768.0
-                # 特征
-                rms = float(np.sqrt(np.mean(window**2)))
-                zero_cross = float(np.sum(window[:-1] * window[1:] < 0)) / len(window)
-                # 自相关估计音高（80-300Hz）
-                corr = np.correlate(window, window, mode="full")[len(window)-1:]
-                min_lag = int(sr / 300)
-                max_lag = int(sr / 80)
-                lag = min_lag + int(np.argmax(corr[min_lag:max_lag]))
-                pitch = sr / max(lag, 1)
-                # 简单规则
-                if rms > 0.05 and zero_cross > 0.08:
-                    emotion = "angry"
-                elif rms > 0.04 and pitch > 200:
-                    emotion = "happy"
-                elif rms < 0.02 and pitch < 120:
-                    emotion = "sad"
-                else:
-                    emotion = "neutral"
+                # 先尝试 SER 模型
+                emotion = SER.instance().predict(window)
+                if emotion is None:
+                    # 回退到启发式
+                    rms = float(np.sqrt(np.mean(window**2)))
+                    zero_cross = float(np.sum(window[:-1] * window[1:] < 0)) / len(window)
+                    corr = np.correlate(window, window, mode="full")[len(window)-1:]
+                    min_lag = int(sr / 300)
+                    max_lag = int(sr / 80)
+                    lag = min_lag + int(np.argmax(corr[min_lag:max_lag]))
+                    pitch = sr / max(lag, 1)
+                    if rms > 0.05 and zero_cross > 0.08:
+                        emotion = "angry"
+                    elif rms > 0.04 and pitch > 200:
+                        emotion = "happy"
+                    elif rms < 0.02 and pitch < 120:
+                        emotion = "sad"
+                    else:
+                        emotion = "neutral"
                 zx = get_xiaozhi()
-                if zx:
+                if zx and emotion:
                     zx.schedule(lambda: zx.set_emotion(emotion))
                 cls.last_emotion_ts = now
                 # 保留最近0.5秒，限制缓冲区

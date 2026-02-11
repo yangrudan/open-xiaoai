@@ -70,4 +70,13 @@ APP_CONFIG = {
         "VERIFICATION_CODE": "", # 首次登陆时，验证码会在这里更新
         "LOCAL_MODE": True,  # 本地处理音频与情绪分析，不连接云端
     },
+    "SER": {
+        "MODEL_PATH": "",  # 指向本地 ONNX 模型文件路径
+        "INPUT_NAME": "input",  # ONNX 模型输入名
+        "OUTPUT_NAME": "logits",  # ONNX 模型输出名
+        "LABELS": ["neutral", "happy", "angry", "sad"],  # 标签顺序需与模型一致
+        "SAMPLE_RATE": 16000,
+        "WINDOW_SECONDS": 1.0,
+        "THROTTLE_SECONDS": 0.5,
+    },
 }
