@@ -160,6 +160,50 @@ PS：如果还是不行，建议更换其他更易识别的唤醒词。
 
 由于 ASR 相关模型文件体积较大，并未直接提交在 git 仓库中，你可以在 release 中下载 [VAD + KWS 相关模型](https://github.com/idootop/open-xiaoai/releases/tag/vad-kws-models)，然后解压到 `xiaozhi/models` 路径下即可。
 
+模型文件包含以下内容：
+
+- `silero_vad.onnx` — VAD（语音活动检测）模型
+- `encoder.onnx` / `decoder.onnx` / `joiner.onnx` — KWS（关键词识别）模型
+- `tokens.txt` / `bpe.model` — KWS 分词相关文件
+
+### Q: 如何配置 SER（语音情绪识别）模型？
+
+SER 功能为可选功能，默认关闭。如果你想要启用语音情绪识别，需要：
+
+1. 导出 ONNX 模型（需要安装 `transformers` 和 `torch`）：
+
+```bash
+uv add transformers torch
+uv run scripts/export_ser_onnx.py --model_id <HuggingFace模型ID> --output xiaozhi/models/ser.onnx
+```
+
+例如，使用 `ehcalabres/wav2vec2-lg-xlsr-en-speech-emotion-recognition` 模型：
+
+```bash
+uv run scripts/export_ser_onnx.py \
+  --model_id ehcalabres/wav2vec2-lg-xlsr-en-speech-emotion-recognition \
+  --output xiaozhi/models/ser.onnx
+```
+
+2. 在 `config.py` 中配置 SER 模型路径和标签（标签顺序需要与导出时打印的一致）：
+
+```py
+APP_CONFIG = {
+    "SER": {
+        "MODEL_PATH": "xiaozhi/models/ser.onnx",  # ONNX 模型文件路径
+        "INPUT_NAME": "input",
+        "OUTPUT_NAME": "logits",
+        "LABELS": ["neutral", "happy", "angry", "sad"],  # 根据导出时的输出调整
+        "SAMPLE_RATE": 16000,
+        "WINDOW_SECONDS": 1.0,
+    },
+    # ... 其他配置
+}
+```
+
+> [!NOTE]
+> 如果不配置 `SER.MODEL_PATH` 或留空，SER 功能不会启用，不影响其他功能的正常使用。
+
 ## 相关项目
 
 - [oxa-server](https://github.com/pu-007/oxa-server): 提供了更强大易用的 config.py 的配置方式
