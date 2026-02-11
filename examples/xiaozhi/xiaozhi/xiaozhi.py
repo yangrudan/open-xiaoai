@@ -122,8 +122,11 @@ class XiaoZhi:
         self.protocol.on_audio_channel_closed = self._on_audio_channel_closed
 
         # 打开音频通道
-        self.device_state = DeviceState.CONNECTING
-        await self.protocol.open_audio_channel()
+        if not self.config.get_config("xiaozhi.LOCAL_MODE", False):
+            self.device_state = DeviceState.CONNECTING
+            await self.protocol.open_audio_channel()
+        else:
+            self.device_state = DeviceState.IDLE
 
     def _initialize_audio(self):
         """初始化音频设备和编解码器"""

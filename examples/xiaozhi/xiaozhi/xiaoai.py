@@ -25,6 +25,8 @@ class XiaoAI:
     mode = "xiaoai"
     speaker = SpeakerManager()
     async_loop: asyncio.AbstractEventLoop = None
+    emotion_buffer = bytearray()
+    last_emotion_ts = 0.0
 
     @classmethod
     def setup_mode(cls):
@@ -45,8 +47,47 @@ class XiaoAI:
 
     @classmethod
     def on_input_data(cls, data: bytes):
-        audio_array = np.frombuffer(data, dtype=np.uint16)
+        audio_array = np.frombuffer(data, dtype=np.int16)
         GlobalStream.input(audio_array.tobytes())
+        # 本地情绪分析（1秒窗口，0.5秒节流）
+        try:
+            import time
+            from xiaozhi.ref import get_xiaozhi
+            # 追加到缓冲区
+            cls.emotion_buffer.extend(audio_array.tobytes())
+            sr = 16000
+            window_bytes = sr * 2  # 1s of int16
+            now = time.time()
+            if len(cls.emotion_buffer) >= window_bytes and (now - cls.last_emotion_ts) >= 0.5:
+                window = np.frombuffer(cls.emotion_buffer[-window_bytes:], dtype=np.int16).astype(np.float32) / 32768.0
+                # 特征
+                rms = float(np.sqrt(np.mean(window**2)))
+                zero_cross = float(np.sum(window[:-1] * window[1:] < 0)) / len(window)
+                # 自相关估计音高（80-300Hz）
+                corr = np.correlate(window, window, mode="full")[len(window)-1:]
+                min_lag = int(sr / 300)
+                max_lag = int(sr / 80)
+                lag = min_lag + int(np.argmax(corr[min_lag:max_lag]))
+                pitch = sr / max(lag, 1)
+                # 简单规则
+                if rms > 0.05 and zero_cross > 0.08:
+                    emotion = "angry"
+                elif rms > 0.04 and pitch > 200:
+                    emotion = "happy"
+                elif rms < 0.02 and pitch < 120:
+                    emotion = "sad"
+                else:
+                    emotion = "neutral"
+                zx = get_xiaozhi()
+                if zx:
+                    zx.schedule(lambda: zx.set_emotion(emotion))
+                cls.last_emotion_ts = now
+                # 保留最近0.5秒，限制缓冲区
+                keep_bytes = int(sr * 2 * 0.5)
+                if len(cls.emotion_buffer) > keep_bytes:
+                    cls.emotion_buffer = cls.emotion_buffer[-keep_bytes:]
+        except Exception:
+            pass
 
     @classmethod
     def on_output_data(cls, data: bytes):

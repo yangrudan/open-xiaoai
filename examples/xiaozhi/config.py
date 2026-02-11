@@ -68,5 +68,6 @@ APP_CONFIG = {
         "WEBSOCKET_ACCESS_TOKEN": "", #（可选）一般用不到这个值
         "DEVICE_ID": "", #（可选）默认自动生成
         "VERIFICATION_CODE": "", # 首次登陆时，验证码会在这里更新
+        "LOCAL_MODE": True,  # 本地处理音频与情绪分析，不连接云端
     },
 }
