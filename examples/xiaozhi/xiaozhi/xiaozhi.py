@@ -327,12 +327,12 @@ class XiaoZhi:
 
         if state == DeviceState.IDLE:
             self.display.update_status("待命")
-            self.display.update_emotion("😶")
+            self.display.update_emotion(self._get_current_emotion())
         elif state == DeviceState.CONNECTING:
             self.display.update_status("连接中...")
         elif state == DeviceState.LISTENING:
             self.display.update_status("聆听中...")
-            self.display.update_emotion("🙂")
+            self.display.update_emotion(self._get_current_emotion())
             # 停止输出流
             if self.audio_codec.output_stream.is_active():
                 self.audio_codec.output_stream.stop_stream()
@@ -393,6 +393,9 @@ class XiaoZhi:
             "sleepy": "😴",
             "silly": "😜",
             "confused": "🙄",
+            "calm": "😌",
+            "disgust": "🤢",
+            "fearful": "😨",
         }
         return emotions.get(self.current_emotion, "😶")
 
@@ -406,9 +409,11 @@ class XiaoZhi:
     def set_emotion(self, emotion):
         """设置表情"""
         self.current_emotion = emotion
+        emoji = self._get_current_emotion()
+        print(f"🎭 当前情绪：{emotion} {emoji}")
         # 更新显示
         if self.display:
-            self.display.update_emotion(self._get_current_emotion())
+            self.display.update_emotion(emoji)
 
     def start_listening(self):
         """开始监听"""
