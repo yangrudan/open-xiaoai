@@ -77,8 +77,9 @@ class XiaoAI:
                     if len(cls.emotion_buffer) > keep_bytes:
                         cls.emotion_buffer = cls.emotion_buffer[-keep_bytes:]
                     return
-                # 先尝试 SER 模型
-                emotion = SER.instance().predict(window)
+                # 先尝试 SER 模型（传入放大后的音频，与 VAD 一致）
+                window_boosted = np.clip(window * boost, -1.0, 1.0)
+                emotion = SER.instance().predict(window_boosted)
                 if emotion is None:
                     # 回退到启发式
                     rms = float(np.sqrt(np.mean(window**2)))
@@ -98,6 +99,8 @@ class XiaoAI:
                         emotion = "neutral"
                 if emotion and emotion != cls.last_emotion:
                     print(f"🎭 情绪识别：{emotion}")
+                if emotion:
+                    cls.last_emotion = emotion
                 zx = get_xiaozhi()
                 if zx and emotion:
                     zx.schedule(lambda e=emotion: zx.set_emotion(e))
